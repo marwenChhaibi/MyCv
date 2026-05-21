@@ -1,11 +1,11 @@
 import axios from 'axios'
-import { useAuthStore } from '@/stores/auth'
+import { manager } from '@/stores/auth'
 
 const api = axios.create({ baseURL: import.meta.env.VITE_API_URL ?? '/api' })
 
-api.interceptors.request.use(config => {
-  const token = useAuthStore().token
-  if (token) config.headers.Authorization = `Bearer ${token}`
+api.interceptors.request.use(async config => {
+  const user = await manager.getUser()
+  if (user?.access_token) config.headers.Authorization = `Bearer ${user.access_token}`
   return config
 })
 

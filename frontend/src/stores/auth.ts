@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { UserManager, type User } from 'oidc-client-ts'
 
-const manager = new UserManager({
+export const manager = new UserManager({
   authority: import.meta.env.VITE_IDENTITY_URL ?? 'http://localhost:8085',
   client_id: 'mycv',
   redirect_uri: `${window.location.origin}/backoffice/callback`,
