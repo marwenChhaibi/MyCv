@@ -1,0 +1,162 @@
+name: Deploy MyCv
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── Checkout ──────────────────────────────────────────────────────────────
+      - uses: actions/checkout@v4
+
+      # ── Build .NET 10 API ─────────────────────────────────────────────────────
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: dotnet publish
+        run: |
+          dotnet restore backend/MyCv.API/MyCv.API.csproj
+          dotnet publish backend/MyCv.API/MyCv.API.csproj \
+            -c Release -o artifact/publish --no-restore
+
+      # ── Build Vue SPA ─────────────────────────────────────────────────────────
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build Vue SPA
+        env:
+          VITE_IDENTITY_URL: https://urfidentity.xyz
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+
+      # ── Assemble deploy bundle ────────────────────────────────────────────────
+      - name: Assemble deploy bundle
+        run: |
+          mkdir -p artifact/backend artifact/frontend/dist artifact/nginx
+          cp backend/Dockerfile.deploy              artifact/backend/Dockerfile.deploy
+          cp frontend/Dockerfile.deploy             artifact/frontend/Dockerfile.deploy
+          cp frontend/nginx.conf                    artifact/frontend/nginx.conf
+          cp -r frontend/dist/.                     artifact/frontend/dist/
+          cp docker-compose.prod.yml                artifact/docker-compose.prod.yml
+          cp nginx/marwenchhaibi.conf               artifact/nginx/marwenchhaibi.conf
+
+      # ── Setup SSH ─────────────────────────────────────────────────────────────
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
+      # ── Upload artifacts ──────────────────────────────────────────────────────
+      - name: Upload artifacts to server
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /opt/mycv/incoming"
+          rsync -az --delete artifact/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/mycv/incoming/
+
+      # ── Upload .env ───────────────────────────────────────────────────────────
+      - name: Upload .env
+        run: |
+          printf 'POSTGRES_PASSWORD=%s\nURFFILES_API_KEY=%s\n' \
+            "${{ secrets.POSTGRES_PASSWORD }}" \
+            "${{ secrets.URFFILES_API_KEY }}" \
+            | ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+                "cat > /opt/mycv/.env && chmod 600 /opt/mycv/.env"
+
+      # ── Build images + start containers ───────────────────────────────────────
+      - name: Deploy containers
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} bash -s <<'ENDSSH'
+          set -e
+          DEPLOY_DIR=/opt/mycv
+
+          echo "=== Build API image ==="
+          docker build \
+            -f $DEPLOY_DIR/incoming/backend/Dockerfile.deploy \
+            -t mycv-api:latest \
+            $DEPLOY_DIR/incoming
+
+          echo "=== Build frontend image ==="
+          docker build \
+            -f $DEPLOY_DIR/incoming/frontend/Dockerfile.deploy \
+            -t mycv-frontend:latest \
+            $DEPLOY_DIR/incoming/frontend
+
+          echo "=== Stop existing containers ==="
+          cd $DEPLOY_DIR
+          docker-compose -f docker-compose.prod.yml down 2>&1 || true
+
+          echo "=== Release port 8098 if occupied ==="
+          cid=$(docker ps -q --filter "publish=8098")
+          [ -n "$cid" ] && docker rm -f "$cid" || true
+
+          cp $DEPLOY_DIR/incoming/docker-compose.prod.yml $DEPLOY_DIR/docker-compose.prod.yml
+
+          echo "=== Start DB ==="
+          docker-compose -f $DEPLOY_DIR/docker-compose.prod.yml --env-file $DEPLOY_DIR/.env up -d db
+
+          echo "=== Wait for postgres (up to 60s) ==="
+          for i in $(seq 1 12); do
+            DB_CID=$(docker-compose -f $DEPLOY_DIR/docker-compose.prod.yml ps -q db 2>/dev/null)
+            if [ -n "$DB_CID" ] && docker exec "$DB_CID" pg_isready -U mycv >/dev/null 2>&1; then
+              echo "Postgres ready after $((i * 5))s"; break
+            fi
+            [ "$i" -eq 12 ] && echo "Postgres not ready after 60s" && exit 1
+            sleep 5
+          done
+
+          echo "=== Start all containers ==="
+          docker-compose -f $DEPLOY_DIR/docker-compose.prod.yml --env-file $DEPLOY_DIR/.env \
+            up --force-recreate --remove-orphans -d
+
+          echo "=== Health check (max 5 min) ==="
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8098/api/health >/dev/null 2>&1; then
+              echo "MyCv healthy after $i attempt(s)"; break
+            fi
+            if [ "$i" -eq 30 ]; then
+              docker-compose -f $DEPLOY_DIR/docker-compose.prod.yml logs --tail=50 api
+              exit 1
+            fi
+            echo "Attempt $i/30 — retrying in 10s..."
+            sleep 10
+          done
+
+          echo "=== Cleanup ==="
+          rm -rf $DEPLOY_DIR/incoming
+          docker image prune -f
+          echo "=== Deployment complete ==="
+          ENDSSH
+
+      # ── Deploy nginx config ───────────────────────────────────────────────────
+      - name: Deploy nginx config
+        run: |
+          scp artifact/nginx/marwenchhaibi.conf \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/etc/nginx/sites-available/marwenchhaibi.conf
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} bash -s <<'ENDSSH'
+          set -e
+          ln -sf /etc/nginx/sites-available/marwenchhaibi.conf /etc/nginx/sites-enabled/marwenchhaibi
+          nginx -t && systemctl reload nginx
+          ENDSSH
+
+      # ── HTTPS via certbot ─────────────────────────────────────────────────────
+      - name: Ensure HTTPS (certbot)
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} bash -s <<'ENDSSH'
+          command -v certbot || apt-get install -y -qq certbot python3-certbot-nginx
+          flock -w 300 /tmp/certbot.lock \
+            certbot --nginx \
+              -d marwenchhaibi.urfidentity.xyz \
+              --non-interactive --agree-tos \
+              --email marwen.chhaibi.95@gmail.com \
+              --keep-until-expiring \
+              --redirect
+          systemctl reload nginx
+          ENDSSH
