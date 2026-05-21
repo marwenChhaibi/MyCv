@@ -4,8 +4,22 @@ import { manager } from '@/stores/auth'
 const api = axios.create({ baseURL: import.meta.env.VITE_API_URL ?? '/api' })
 
 api.interceptors.request.use(async config => {
+  const storageKey = `oidc.user:${manager.settings.authority}:${manager.settings.client_id}`
+  const raw = sessionStorage.getItem(storageKey)
   const user = await manager.getUser()
-  if (user?.access_token) config.headers.Authorization = `Bearer ${user.access_token}`
+
+  console.group(`[api] ${config.method?.toUpperCase()} ${config.url}`)
+  console.log('sessionStorage key:', storageKey)
+  console.log('sessionStorage raw:', raw ? JSON.parse(raw) : 'MISSING — no user in sessionStorage')
+  console.log('manager.getUser():', user ? { expired: user.expired, scopes: user.scopes, hasToken: !!user.access_token } : null)
+  if (user?.access_token) {
+    config.headers.Authorization = `Bearer ${user.access_token}`
+    console.log('Authorization header set ✓')
+  } else {
+    console.warn('NO TOKEN — request will hit 401')
+  }
+  console.groupEnd()
+
   return config
 })
 
