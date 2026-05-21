@@ -8,7 +8,7 @@ const auth = useAuthStore()
 
 <template>
   <div class="min-h-screen flex">
-    <aside class="w-56 bg-slate-900 border-r border-slate-800 flex flex-col p-4 flex-shrink-0">
+    <aside class="w-56 bg-slate-900 border-r border-slate-800 flex flex-col p-4 flex-shrink-0 sticky top-0 h-screen">
       <div class="font-display font-bold text-white mb-8 mt-2 px-3">
         <span style="color: var(--color-accent)">M</span>yCv
         <span class="text-slate-600 font-normal text-sm ml-1">admin</span>

@@ -9,21 +9,32 @@ builder.Services.AddOpenApi();
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(GetProjectsQuery).Assembly));
 builder.Services.AddInfrastructure(builder.Configuration);
 
-// Derive authority from MetadataAddress (strip the discovery path) or use Authority directly
-var metadataAddress = builder.Configuration["Identity:MetadataAddress"] ?? "";
-var authority = builder.Configuration["Identity:Authority"]
-    ?? (metadataAddress.Contains("/.well-known")
-        ? metadataAddress[..metadataAddress.IndexOf("/.well-known")]
-        : metadataAddress);
+var metadataAddress = builder.Configuration["Identity:MetadataAddress"]
+    ?? "https://urfidentity.xyz/.well-known/openid-configuration";
+var authority = metadataAddress.Contains("/.well-known")
+    ? metadataAddress[..metadataAddress.IndexOf("/.well-known")]
+    : metadataAddress;
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opts =>
     {
         opts.Authority = authority;
+        opts.MetadataAddress = metadataAddress;
         opts.Audience = "mycv";
+        opts.RequireHttpsMetadata = false;
         opts.TokenValidationParameters = new()
         {
             ValidateIssuer = false,
+        };
+        opts.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = ctx =>
+            {
+                var log = ctx.HttpContext.RequestServices
+                    .GetRequiredService<ILoggerFactory>().CreateLogger("JwtAuth");
+                log.LogError(ctx.Exception, "JWT validation failed on {Path}", ctx.Request.Path);
+                return Task.CompletedTask;
+            },
         };
     });
 
