@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { usePortfolioStore } from '@/stores/portfolio'
+import { portfolioApi } from '@/api'
 import HeroSection from '@/sections/HeroSection.vue'
 import AboutSection from '@/sections/AboutSection.vue'
 import ExperienceSection from '@/sections/ExperienceSection.vue'
@@ -12,7 +13,10 @@ import ContactSection from '@/sections/ContactSection.vue'
 import TechLogosSection from '@/sections/TechLogosSection.vue'
 
 const store = usePortfolioStore()
-onMounted(() => store.load())
+onMounted(() => {
+  store.load()
+  portfolioApi.recordVisit()
+})
 </script>
 
 <template>

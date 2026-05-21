@@ -15,6 +15,13 @@ const auth = useAuthStore()
       </div>
       <nav class="flex flex-col gap-1 flex-1">
         <router-link
+          to="/backoffice/analytics"
+          class="px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800 transition-all"
+          active-class="bg-slate-800 text-white"
+        >
+          Analytics
+        </router-link>
+        <router-link
           to="/backoffice/projects"
           class="px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800 transition-all"
           active-class="bg-slate-800 text-white"

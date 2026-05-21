@@ -16,6 +16,7 @@ const router = createRouter({
         { path: '', redirect: '/backoffice/projects' },
         { path: 'projects', component: () => import('@/pages/backoffice/ProjectsPage.vue') },
         { path: 'experiences', component: () => import('@/pages/backoffice/ExperiencesPage.vue') },
+        { path: 'analytics', component: () => import('@/pages/backoffice/AnalyticsPage.vue') },
       ],
     },
   ],

@@ -12,6 +12,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Experience> Experiences => Set<Experience>();
     public DbSet<Skill> Skills => Set<Skill>();
     public DbSet<ProfileInfo> Profiles => Set<ProfileInfo>();
+    public DbSet<PageVisit> PageVisits => Set<PageVisit>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

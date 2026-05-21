@@ -104,4 +104,14 @@ export const portfolioApi = {
     return api.post(`/projects/${projectId}/screenshots`, form, { headers: { 'Content-Type': 'multipart/form-data' } })
   },
   deleteScreenshot: (screenshotId: string) => api.delete(`/projects/screenshots/${screenshotId}`),
+  recordVisit: () => api.post('/visits').catch(() => {}),
+  getVisitStats: () => api.get<VisitStatsDto>('/visits/stats'),
+}
+
+export interface VisitDayDto { date: string; count: number }
+export interface VisitStatsDto {
+  total: number
+  today: number
+  thisWeek: number
+  last30Days: VisitDayDto[]
 }
