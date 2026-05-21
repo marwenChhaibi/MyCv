@@ -121,6 +121,8 @@ export const portfolioApi = {
   deleteScreenshot: (screenshotId: string) => api.delete(`/projects/screenshots/${screenshotId}`),
   recordVisit: () => api.post('/visits').catch(() => {}),
   getVisitStats: () => api.get<VisitStatsDto>('/visits/stats'),
+  recordCvDownload: () => api.post('/cv/downloads').catch(() => {}),
+  getCvDownloadStats: () => api.get<CvDownloadStatsDto>('/cv/downloads/stats'),
 }
 
 export interface VisitDayDto { date: string; count: number }
@@ -129,4 +131,10 @@ export interface VisitStatsDto {
   today: number
   thisWeek: number
   last30Days: VisitDayDto[]
+}
+
+export interface CvDownloadDayDto { date: string; count: number }
+export interface CvDownloadStatsDto {
+  total: number
+  last30Days: CvDownloadDayDto[]
 }

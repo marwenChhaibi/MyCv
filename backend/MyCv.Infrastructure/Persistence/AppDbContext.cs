@@ -13,6 +13,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Skill> Skills => Set<Skill>();
     public DbSet<ProfileInfo> Profiles => Set<ProfileInfo>();
     public DbSet<PageVisit> PageVisits => Set<PageVisit>();
+    public DbSet<CvDownload> CvDownloads => Set<CvDownload>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

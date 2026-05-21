@@ -11,6 +11,7 @@ export default {
     greeting: 'Bonjour, je suis',
     cta_contact: 'Me contacter',
     cta_projects: 'Voir mes projets',
+    download_cv: 'Télécharger le CV',
     open_to_work: 'Disponible pour missions Tech Lead / Senior',
   },
   about: {

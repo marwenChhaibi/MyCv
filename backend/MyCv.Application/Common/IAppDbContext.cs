@@ -12,5 +12,6 @@ public interface IAppDbContext
     DbSet<Skill> Skills { get; }
     DbSet<ProfileInfo> Profiles { get; }
     DbSet<PageVisit> PageVisits { get; }
+    DbSet<CvDownload> CvDownloads { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

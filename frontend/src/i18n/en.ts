@@ -11,6 +11,7 @@ export default {
     greeting: 'Hi, I\'m',
     cta_contact: 'Get in touch',
     cta_projects: 'View my projects',
+    download_cv: 'Download CV',
     open_to_work: 'Open to Tech Lead / Senior roles',
   },
   about: {

@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { usePortfolioStore } from '@/stores/portfolio'
+import { portfolioApi } from '@/api'
 
 const { t, locale } = useI18n()
 const store = usePortfolioStore()
@@ -9,6 +10,14 @@ const profile = computed(() => store.profile)
 const displayTitle = computed(() =>
   locale.value === 'fr' ? profile.value?.titleFr : profile.value?.title
 )
+
+function downloadCv() {
+  portfolioApi.recordCvDownload()
+  const link = document.createElement('a')
+  link.href = '/cv.pdf'
+  link.download = 'Marwen_Chhaibi_CV.pdf'
+  link.click()
+}
 </script>
 
 <template>
@@ -37,6 +46,15 @@ const displayTitle = computed(() =>
       <div class="flex flex-wrap items-center justify-center gap-4">
         <a href="#contact" class="btn-primary">{{ t('hero.cta_contact') }}</a>
         <a href="#experience" class="btn-outline">{{ t('hero.cta_projects') }}</a>
+        <button
+          @click="downloadCv"
+          class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-slate-700 text-slate-300 hover:border-slate-500 hover:text-white transition-all text-sm font-medium"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h4a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+          </svg>
+          {{ t('hero.download_cv') }}
+        </button>
       </div>
     </div>
 
