@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mycv
+      POSTGRES_USER: mycv
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-mycv_secret}"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mycv"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    image: mycv-api:latest
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=mycv;Username=mycv;Password=${POSTGRES_PASSWORD:-mycv_secret}"
+      Identity__MetadataAddress: "https://urfidentity.xyz/.well-known/openid-configuration"
+      UrfFiles__BaseUrl: "https://urffiles.urfidentity.xyz"
+      UrfFiles__ApiKey: "${URFFILES_API_KEY:-}"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  frontend:
+    image: mycv-frontend:latest
+    restart: unless-stopped
+    ports:
+      - "8098:80"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:

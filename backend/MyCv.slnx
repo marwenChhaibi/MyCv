@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="MyCv.API/MyCv.API.csproj" />
+  <Project Path="MyCv.Application/MyCv.Application.csproj" />
+  <Project Path="MyCv.Domain/MyCv.Domain.csproj" />
+  <Project Path="MyCv.Infrastructure/MyCv.Infrastructure.csproj" />
+</Solution>
