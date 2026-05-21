@@ -62,8 +62,8 @@ jobs:
       # ── Upload artifacts ──────────────────────────────────────────────────────
       - name: Upload artifacts to server
         run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /opt/mycv/incoming"
-          rsync -az --delete artifact/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/mycv/incoming/
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "rm -rf /opt/mycv/incoming && mkdir -p /opt/mycv/incoming"
+          scp -r artifact/. ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/mycv/incoming/
 
       # ── Upload .env ───────────────────────────────────────────────────────────
       - name: Upload .env
