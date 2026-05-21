@@ -1,7 +1,6 @@
 using MyCv.Application.Features.Projects.Queries;
 using MyCv.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,35 +9,21 @@ builder.Services.AddOpenApi();
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(GetProjectsQuery).Assembly));
 builder.Services.AddInfrastructure(builder.Configuration);
 
-var metadataAddress = builder.Configuration["Identity:MetadataAddress"]!;
-var jwksUrl = metadataAddress.Replace(".well-known/openid-configuration", ".well-known/jwks");
-
-SecurityKey[] signingKeyCache = [];
-DateTime cacheUntil = DateTime.MinValue;
+// Derive authority from MetadataAddress (strip the discovery path) or use Authority directly
+var metadataAddress = builder.Configuration["Identity:MetadataAddress"] ?? "";
+var authority = builder.Configuration["Identity:Authority"]
+    ?? (metadataAddress.Contains("/.well-known")
+        ? metadataAddress[..metadataAddress.IndexOf("/.well-known")]
+        : metadataAddress);
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opts =>
     {
+        opts.Authority = authority;
         opts.Audience = "mycv";
-        opts.RequireHttpsMetadata = false;
         opts.TokenValidationParameters = new()
         {
             ValidateIssuer = false,
-            IssuerSigningKeyResolver = (_, _, _, _) =>
-            {
-                if (DateTime.UtcNow > cacheUntil)
-                {
-                    try
-                    {
-                        using var http = new HttpClient();
-                        var json = http.GetStringAsync(jwksUrl).GetAwaiter().GetResult();
-                        signingKeyCache = new JsonWebKeySet(json).GetSigningKeys().ToArray();
-                        cacheUntil = DateTime.UtcNow.AddMinutes(10);
-                    }
-                    catch { }
-                }
-                return signingKeyCache;
-            }
         };
     });
 
