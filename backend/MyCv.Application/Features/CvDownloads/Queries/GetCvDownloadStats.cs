@@ -7,7 +7,6 @@ namespace MyCv.Application.Features.CvDownloads.Queries;
 public record CvDownloadDayDto(string Date, int Count);
 public record CvDownloadCountryDto(string Country, int Count);
 public record CvDownloadDeviceDto(string Device, int Count);
-public record CvDownloadUtmSourceDto(string Source, int Count);
 public record CvDownloadBrowserDto(string Browser, int Count);
 
 public record CvDownloadStatsDto(
@@ -15,7 +14,6 @@ public record CvDownloadStatsDto(
     List<CvDownloadDayDto> Last30Days,
     List<CvDownloadCountryDto> TopCountries,
     List<CvDownloadDeviceDto> DeviceBreakdown,
-    List<CvDownloadUtmSourceDto> TopUtmSources,
     List<CvDownloadBrowserDto> BrowserBreakdown);
 
 public record GetCvDownloadStatsQuery : IRequest<CvDownloadStatsDto>;
@@ -61,16 +59,6 @@ public class GetCvDownloadStatsHandler(IAppDbContext db) : IRequestHandler<GetCv
             .OrderByDescending(x => x.Count)
             .ToList();
 
-        var topUtmSources = (await db.CvDownloads
-            .Where(d => d.UtmSource != null)
-            .GroupBy(d => d.UtmSource!)
-            .Select(g => new { Key = g.Key, Count = g.Count() })
-            .OrderByDescending(x => x.Count)
-            .Take(10)
-            .ToListAsync(ct))
-            .Select(x => new CvDownloadUtmSourceDto(x.Key, x.Count))
-            .ToList();
-
         var browserBreakdown = (await db.CvDownloads
             .Where(d => d.Browser != null)
             .GroupBy(d => d.Browser!)
@@ -85,7 +73,6 @@ public class GetCvDownloadStatsHandler(IAppDbContext db) : IRequestHandler<GetCv
             Last30Days:      last30,
             TopCountries:    topCountries,
             DeviceBreakdown: deviceBreakdown,
-            TopUtmSources:   topUtmSources,
             BrowserBreakdown: browserBreakdown);
     }
 }

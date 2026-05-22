@@ -13,8 +13,6 @@ public class VisitsController(IMediator mediator) : ControllerBase
     public record RecordVisitRequest(
         string? FingerprintId,
         string? Referrer,
-        string? UtmSource,
-        string? UtmMedium,
         string? DeviceType,
         string? Language);
 
@@ -28,8 +26,6 @@ public class VisitsController(IMediator mediator) : ControllerBase
             body?.FingerprintId,
             ip,
             body?.Referrer,
-            body?.UtmSource,
-            body?.UtmMedium,
             body?.DeviceType,
             body?.Language));
         return Ok();

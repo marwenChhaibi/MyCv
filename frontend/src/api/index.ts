@@ -37,33 +37,17 @@ export function getOrCreateFingerprint(): string {
 }
 
 /**
- * Builds the full tracking payload.
- * UTM params are read from the URL and persisted in sessionStorage so they
- * survive SPA navigation (e.g. someone lands on ?utm_source=linkedin then
- * clicks around before downloading the CV).
+ * Builds the tracking payload (fingerprint, referrer, device, language).
  */
 export function getTrackingPayload() {
-  const params = new URLSearchParams(window.location.search)
-
-  // Persist UTM on first load; re-use across the session
-  const utmKeys = ['utm_source', 'utm_medium', 'utm_campaign'] as const
-  utmKeys.forEach(k => {
-    if (params.get(k)) sessionStorage.setItem(k, params.get(k)!)
-  })
-
-  const utmSource = sessionStorage.getItem('utm_source')
-  const utmMedium = sessionStorage.getItem('utm_medium')
-
   const w = window.screen.width
   const deviceType = w < 768 ? 'mobile' : w < 1024 ? 'tablet' : 'desktop'
 
   return {
     fingerprintId: getOrCreateFingerprint(),
     referrer:      document.referrer || null,
-    utmSource:     utmSource || null,
-    utmMedium:     utmMedium || null,
     deviceType,
-    language:      navigator.language?.split('-')[0] || null,  // 'fr', 'en', ...
+    language:      navigator.language?.split('-')[0] || null,
   }
 }
 
@@ -170,7 +154,6 @@ export const portfolioApi = {
 export interface VisitDayDto { date: string; count: number }
 export interface CountryCountDto { country: string; count: number }
 export interface ReferrerCountDto { referrer: string; count: number }
-export interface UtmSourceCountDto { source: string; count: number }
 export interface DeviceCountDto { device: string; count: number }
 export interface BrowserCountDto { browser: string; count: number }
 export interface LanguageCountDto { language: string; count: number }
@@ -183,7 +166,6 @@ export interface VisitStatsDto {
   last30Days: VisitDayDto[]
   topCountries: CountryCountDto[]
   topReferrers: ReferrerCountDto[]
-  topUtmSources: UtmSourceCountDto[]
   deviceBreakdown: DeviceCountDto[]
   browserBreakdown: BrowserCountDto[]
   topLanguages: LanguageCountDto[]
@@ -194,13 +176,11 @@ export interface VisitStatsDto {
 export interface CvDownloadDayDto { date: string; count: number }
 export interface CvDownloadCountryDto { country: string; count: number }
 export interface CvDownloadDeviceDto { device: string; count: number }
-export interface CvDownloadUtmSourceDto { source: string; count: number }
 export interface CvDownloadBrowserDto { browser: string; count: number }
 export interface CvDownloadStatsDto {
   total: number
   last30Days: CvDownloadDayDto[]
   topCountries: CvDownloadCountryDto[]
   deviceBreakdown: CvDownloadDeviceDto[]
-  topUtmSources: CvDownloadUtmSourceDto[]
   browserBreakdown: CvDownloadBrowserDto[]
 }

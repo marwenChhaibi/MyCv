@@ -7,7 +7,6 @@ namespace MyCv.Application.Features.Visits.Queries;
 public record VisitDayDto(string Date, int Count);
 public record CountryCountDto(string Country, int Count);
 public record ReferrerCountDto(string Referrer, int Count);
-public record UtmSourceCountDto(string Source, int Count);
 public record DeviceCountDto(string Device, int Count);
 public record BrowserCountDto(string Browser, int Count);
 public record LanguageCountDto(string Language, int Count);
@@ -21,7 +20,6 @@ public record VisitStatsDto(
     List<VisitDayDto> Last30Days,
     List<CountryCountDto> TopCountries,
     List<ReferrerCountDto> TopReferrers,
-    List<UtmSourceCountDto> TopUtmSources,
     List<DeviceCountDto> DeviceBreakdown,
     List<BrowserCountDto> BrowserBreakdown,
     List<LanguageCountDto> TopLanguages,
@@ -96,16 +94,6 @@ public class GetVisitStatsHandler(IAppDbContext db) : IRequestHandler<GetVisitSt
             .Select(x => new ReferrerCountDto(x.Key, x.Count))
             .ToList();
 
-        var topUtmSources = (await db.PageVisits
-            .Where(v => v.UtmSource != null)
-            .GroupBy(v => v.UtmSource!)
-            .Select(g => new { Key = g.Key, Count = g.Count() })
-            .OrderByDescending(x => x.Count)
-            .Take(10)
-            .ToListAsync(ct))
-            .Select(x => new UtmSourceCountDto(x.Key, x.Count))
-            .ToList();
-
         var deviceBreakdown = (await db.PageVisits
             .Where(v => v.DeviceType != null)
             .GroupBy(v => v.DeviceType!)
@@ -141,7 +129,6 @@ public class GetVisitStatsHandler(IAppDbContext db) : IRequestHandler<GetVisitSt
             Last30Days:       last30,
             TopCountries:     topCountries,
             TopReferrers:     topReferrers,
-            TopUtmSources:    topUtmSources,
             DeviceBreakdown:  deviceBreakdown,
             BrowserBreakdown: browserBreakdown,
             TopLanguages:     topLanguages,

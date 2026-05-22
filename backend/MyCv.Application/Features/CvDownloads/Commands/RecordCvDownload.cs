@@ -10,8 +10,6 @@ public record RecordCvDownloadCommand(
     string? FingerprintId,
     string? IpAddress,
     string? Referrer,
-    string? UtmSource,
-    string? UtmMedium,
     string? DeviceType,
     string? Language) : IRequest;
 
@@ -39,8 +37,6 @@ public class RecordCvDownloadHandler(IAppDbContext db, IGeoLocationService geo) 
             IpAddress     = req.IpAddress,
             Country       = country,
             Referrer      = req.Referrer?[..Math.Min(req.Referrer.Length, 500)],
-            UtmSource     = req.UtmSource?[..Math.Min(req.UtmSource.Length, 100)],
-            UtmMedium     = req.UtmMedium?[..Math.Min(req.UtmMedium.Length, 100)],
             DeviceType    = req.DeviceType,
             Browser       = UserAgentParser.ParseBrowser(req.UserAgent),
             Language      = req.Language?[..Math.Min(req.Language.Length, 10)],

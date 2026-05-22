@@ -187,26 +187,8 @@ const browserIcon: Record<string, string> = {
         </div>
       </div>
 
-      <!-- ── UTM sources + Languages ────────────────────────────────────────── -->
+      <!-- ── Languages ────────────────────────────────────────────────────── -->
       <div class="grid grid-cols-2 gap-6 mb-6">
-        <div class="glass-card p-6">
-          <h2 class="section-title">UTM sources (campaigns)</h2>
-          <div v-if="!stats.topUtmSources.length" class="empty-state">
-            No UTM data yet — tag your links:<br/>
-            <code class="text-xs text-slate-400 mt-1 block">?utm_source=linkedin&amp;utm_medium=profile</code>
-          </div>
-          <ul v-else class="space-y-2">
-            <li v-for="row in stats.topUtmSources" :key="row.source" class="stat-row">
-              <span class="stat-label">{{ row.source }}</span>
-              <div class="stat-bar-track">
-                <div class="stat-bar bg-yellow-500"
-                  :style="{ width: (row.count/stats.topUtmSources[0].count*100)+'%' }" />
-              </div>
-              <span class="stat-count">{{ row.count }}</span>
-            </li>
-          </ul>
-        </div>
-
         <div class="glass-card p-6">
           <h2 class="section-title">Visitor languages</h2>
           <div v-if="!stats.topLanguages.length" class="empty-state">No data yet</div>
@@ -295,22 +277,6 @@ const browserIcon: Record<string, string> = {
               <div class="stat-bar-track">
                 <div class="stat-bar bg-purple-500"
                   :style="{ width: (row.count/cvStats.topCountries[0].count*100)+'%' }" />
-              </div>
-              <span class="stat-count">{{ row.count }}</span>
-            </li>
-          </ul>
-        </div>
-
-        <!-- CV by UTM source -->
-        <div class="glass-card p-6">
-          <h2 class="section-title">Downloads by UTM source</h2>
-          <div v-if="!cvStats.topUtmSources.length" class="empty-state">No UTM data yet</div>
-          <ul v-else class="space-y-2">
-            <li v-for="row in cvStats.topUtmSources" :key="row.source" class="stat-row">
-              <span class="stat-label">{{ row.source }}</span>
-              <div class="stat-bar-track">
-                <div class="stat-bar bg-yellow-500"
-                  :style="{ width: (row.count/cvStats.topUtmSources[0].count*100)+'%' }" />
               </div>
               <span class="stat-count">{{ row.count }}</span>
             </li>
