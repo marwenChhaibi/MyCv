@@ -118,24 +118,11 @@ jobs:
 
           echo "=== Seed EF migration history (idempotent) ==="
           DB_CID=$(docker-compose -f $DEPLOY_DIR/docker-compose.prod.yml ps -q db)
-          docker exec "$DB_CID" psql -U mycv -d mycv << 'PSQL'
-CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
-  "MigrationId" varchar(150) PRIMARY KEY,
-  "ProductVersion" varchar(32) NOT NULL
-);
--- Mark InitialCreate as done only if tables already exist (pre-migration DB)
-INSERT INTO "__EFMigrationsHistory" SELECT '20260522080943_InitialCreate','10.0.8'
-WHERE EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='Experiences')
-ON CONFLICT DO NOTHING;
--- Mark AddVisitorTracking as done only if FingerprintId column already exists
-INSERT INTO "__EFMigrationsHistory" SELECT '20260522082021_AddVisitorTracking','10.0.8'
-WHERE EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='PageVisits' AND column_name='FingerprintId')
-ON CONFLICT DO NOTHING;
--- Mark AddVisitorDetails as done only if UtmSource column already exists
-INSERT INTO "__EFMigrationsHistory" SELECT '20260522083001_AddVisitorDetails','10.0.8'
-WHERE EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='PageVisits' AND column_name='UtmSource')
-ON CONFLICT DO NOTHING;
-PSQL
+          docker exec "$DB_CID" psql -U mycv -d mycv \
+            -c "CREATE TABLE IF NOT EXISTS \"__EFMigrationsHistory\" (\"MigrationId\" varchar(150) PRIMARY KEY, \"ProductVersion\" varchar(32) NOT NULL)" \
+            -c "INSERT INTO \"__EFMigrationsHistory\" SELECT '20260522080943_InitialCreate','10.0.8' WHERE EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='Experiences') ON CONFLICT DO NOTHING" \
+            -c "INSERT INTO \"__EFMigrationsHistory\" SELECT '20260522082021_AddVisitorTracking','10.0.8' WHERE EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='PageVisits' AND column_name='FingerprintId') ON CONFLICT DO NOTHING" \
+            -c "INSERT INTO \"__EFMigrationsHistory\" SELECT '20260522083001_AddVisitorDetails','10.0.8' WHERE EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='PageVisits' AND column_name='UtmSource') ON CONFLICT DO NOTHING"
 
           echo "=== Start all containers ==="
           docker-compose -f $DEPLOY_DIR/docker-compose.prod.yml --env-file $DEPLOY_DIR/.env \
