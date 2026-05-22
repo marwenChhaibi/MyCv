@@ -12,7 +12,7 @@ public class DbSeeder(IServiceProvider services, ILogger<DbSeeder> logger) : IHo
     {
         await using var scope = services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        await db.Database.EnsureCreatedAsync(ct);
+        await db.Database.MigrateAsync(ct);
 
         if (!await db.Profiles.AnyAsync(ct)) await SeedProfileAsync(db, ct);
         if (!await db.Experiences.AnyAsync(ct)) await SeedExperiencesAsync(db, ct);

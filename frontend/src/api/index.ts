@@ -25,6 +25,48 @@ api.interceptors.request.use(async config => {
 
 export default api
 
+/** Returns a stable UUID for this browser, persisted in localStorage. */
+export function getOrCreateFingerprint(): string {
+  const key = 'mcv_fp'
+  let id = localStorage.getItem(key)
+  if (!id) {
+    id = crypto.randomUUID()
+    localStorage.setItem(key, id)
+  }
+  return id
+}
+
+/**
+ * Builds the full tracking payload.
+ * UTM params are read from the URL and persisted in sessionStorage so they
+ * survive SPA navigation (e.g. someone lands on ?utm_source=linkedin then
+ * clicks around before downloading the CV).
+ */
+export function getTrackingPayload() {
+  const params = new URLSearchParams(window.location.search)
+
+  // Persist UTM on first load; re-use across the session
+  const utmKeys = ['utm_source', 'utm_medium', 'utm_campaign'] as const
+  utmKeys.forEach(k => {
+    if (params.get(k)) sessionStorage.setItem(k, params.get(k)!)
+  })
+
+  const utmSource = sessionStorage.getItem('utm_source')
+  const utmMedium = sessionStorage.getItem('utm_medium')
+
+  const w = window.screen.width
+  const deviceType = w < 768 ? 'mobile' : w < 1024 ? 'tablet' : 'desktop'
+
+  return {
+    fingerprintId: getOrCreateFingerprint(),
+    referrer:      document.referrer || null,
+    utmSource:     utmSource || null,
+    utmMedium:     utmMedium || null,
+    deviceType,
+    language:      navigator.language?.split('-')[0] || null,  // 'fr', 'en', ...
+  }
+}
+
 export interface ProjectDto {
   id: string
   title: string
@@ -119,22 +161,46 @@ export const portfolioApi = {
     return api.post(`/projects/${projectId}/screenshots`, form, { headers: { 'Content-Type': 'multipart/form-data' } })
   },
   deleteScreenshot: (screenshotId: string) => api.delete(`/projects/screenshots/${screenshotId}`),
-  recordVisit: () => api.post('/visits').catch(() => {}),
+  recordVisit: () => api.post('/visits', getTrackingPayload()).catch(() => {}),
   getVisitStats: () => api.get<VisitStatsDto>('/visits/stats'),
-  recordCvDownload: () => api.post('/cv/downloads').catch(() => {}),
+  recordCvDownload: () => api.post('/cv/downloads', getTrackingPayload()).catch(() => {}),
   getCvDownloadStats: () => api.get<CvDownloadStatsDto>('/cv/downloads/stats'),
 }
 
 export interface VisitDayDto { date: string; count: number }
+export interface CountryCountDto { country: string; count: number }
+export interface ReferrerCountDto { referrer: string; count: number }
+export interface UtmSourceCountDto { source: string; count: number }
+export interface DeviceCountDto { device: string; count: number }
+export interface BrowserCountDto { browser: string; count: number }
+export interface LanguageCountDto { language: string; count: number }
+export interface HourCountDto { hour: number; count: number }
+export interface DayOfWeekCountDto { day: string; count: number }
 export interface VisitStatsDto {
   total: number
   today: number
   thisWeek: number
   last30Days: VisitDayDto[]
+  topCountries: CountryCountDto[]
+  topReferrers: ReferrerCountDto[]
+  topUtmSources: UtmSourceCountDto[]
+  deviceBreakdown: DeviceCountDto[]
+  browserBreakdown: BrowserCountDto[]
+  topLanguages: LanguageCountDto[]
+  visitsByHour: HourCountDto[]
+  visitsByDayOfWeek: DayOfWeekCountDto[]
 }
 
 export interface CvDownloadDayDto { date: string; count: number }
+export interface CvDownloadCountryDto { country: string; count: number }
+export interface CvDownloadDeviceDto { device: string; count: number }
+export interface CvDownloadUtmSourceDto { source: string; count: number }
+export interface CvDownloadBrowserDto { browser: string; count: number }
 export interface CvDownloadStatsDto {
   total: number
   last30Days: CvDownloadDayDto[]
+  topCountries: CvDownloadCountryDto[]
+  deviceBreakdown: CvDownloadDeviceDto[]
+  topUtmSources: CvDownloadUtmSourceDto[]
+  browserBreakdown: CvDownloadBrowserDto[]
 }

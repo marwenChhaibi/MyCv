@@ -17,6 +17,11 @@ public static class DependencyInjection
         services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
         services.AddHostedService<DbSeeder>();
 
+        services.AddHttpClient<IGeoLocationService, GeoLocationService>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(3);
+        });
+
         services.AddHttpClient<UrfFilesClient>(client =>
         {
             client.BaseAddress = new Uri(config["UrfFiles:BaseUrl"]!);
